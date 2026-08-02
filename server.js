@@ -476,13 +476,30 @@ app.delete(['/admin/exams/:id', '/api/admin/exams/:id'], (req, res) => {
 });
 
 // 6. STATIC ROUTES
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-const distPath = path.join(__dirname, '..', 'UnifyStudyApp', 'dist');
-if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
+
+// Serve Student Web App from 'public_app' or sibling 'UnifyStudyApp/dist'
+const publicAppPath = path.join(__dirname, 'public_app');
+const siblingDistPath = path.join(__dirname, '..', 'UnifyStudyApp', 'dist');
+
+if (fs.existsSync(publicAppPath)) {
+    app.use(express.static(publicAppPath));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/uploads')) {
+            return next();
+        }
+        res.sendFile(path.join(publicAppPath, 'index.html'));
+    });
+} else if (fs.existsSync(siblingDistPath)) {
+    app.use(express.static(siblingDistPath));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/uploads')) {
+            return next();
+        }
+        res.sendFile(path.join(siblingDistPath, 'index.html'));
+    });
 } else {
-    // Fallback: Redirect root / to /admin panel if frontend dist folder is not uploaded on VPS
     app.get('/', (req, res) => res.redirect('/admin'));
 }
 
