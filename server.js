@@ -488,11 +488,11 @@ if (activeAppPath) {
     console.log(`[STATIC_ROUTER] Serving Student Web App from: ${activeAppPath}`);
     app.use(express.static(activeAppPath));
     app.get('/', (req, res) => res.sendFile(path.join(activeAppPath, 'index.html')));
-    app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/uploads')) {
-            return next();
+    app.use((req, res, next) => {
+        if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/admin') && !req.path.startsWith('/uploads')) {
+            return res.sendFile(path.join(activeAppPath, 'index.html'));
         }
-        res.sendFile(path.join(activeAppPath, 'index.html'));
+        next();
     });
 } else {
     console.warn(`[STATIC_ROUTER] Web App dist folder not found. Falling back / to /admin`);
