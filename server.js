@@ -479,27 +479,23 @@ app.delete(['/admin/exams/:id', '/api/admin/exams/:id'], (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 
-// Serve Student Web App from 'public_app' or sibling 'UnifyStudyApp/dist'
 const publicAppPath = path.join(__dirname, 'public_app');
 const siblingDistPath = path.join(__dirname, '..', 'UnifyStudyApp', 'dist');
 
-if (fs.existsSync(publicAppPath)) {
-    app.use(express.static(publicAppPath));
+const activeAppPath = fs.existsSync(publicAppPath) ? publicAppPath : (fs.existsSync(siblingDistPath) ? siblingDistPath : null);
+
+if (activeAppPath) {
+    console.log(`[STATIC_ROUTER] Serving Student Web App from: ${activeAppPath}`);
+    app.use(express.static(activeAppPath));
+    app.get('/', (req, res) => res.sendFile(path.join(activeAppPath, 'index.html')));
     app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/uploads')) {
             return next();
         }
-        res.sendFile(path.join(publicAppPath, 'index.html'));
-    });
-} else if (fs.existsSync(siblingDistPath)) {
-    app.use(express.static(siblingDistPath));
-    app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api') || req.path.startsWith('/admin') || req.path.startsWith('/uploads')) {
-            return next();
-        }
-        res.sendFile(path.join(siblingDistPath, 'index.html'));
+        res.sendFile(path.join(activeAppPath, 'index.html'));
     });
 } else {
+    console.warn(`[STATIC_ROUTER] Web App dist folder not found. Falling back / to /admin`);
     app.get('/', (req, res) => res.redirect('/admin'));
 }
 
